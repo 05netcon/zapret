@@ -1,0 +1,4 @@
+apk update
+apk add kmod-mtd-rw
+insmod mtd-rw i_want_a_brick=1
+mtd -e FIP write /tmp/tmp/fip.bin FIP

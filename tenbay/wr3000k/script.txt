@@ -1,0 +1,66 @@
+wlan_name_2g="WIFI-2G"
+wlan_password_2g="10203040"
+wlan_name_5g="WIFI-5G"
+wlan_password_5g="10203040"
+
+root_password="admin"
+
+exec >/tmp/setup.log 2>&1
+
+uci set system.@system[0].zonename="Europe/Moscow"
+uci set system.@system[0].timezone='MSK-3'
+uci commit system
+
+mv /etc/rc.button/reset /root
+mv /etc/rc.button/wps /root
+
+if [ -n "$root_password" ]; then
+  (echo "$root_password"; sleep 1; echo "$root_password") | passwd > /dev/null
+fi
+
+uci set network.wan.metric='2'
+uci set network.globals.packet_steering='1'
+uci set network.globals.steering_flows='128'
+uci commit network
+
+uci set 'network.lan.ipv6=0'
+uci set 'network.wan.ipv6=0'
+uci set 'dhcp.lan.dhcpv6=disabled'
+uci -q delete dhcp.lan.dhcpv6
+uci -q delete dhcp.lan.ra
+uci set network.lan.delegate="0"
+uci -q delete network.globals.ula_prefix
+uci delete network.wan6
+/etc/init.d/odhcpd disable
+/etc/init.d/odhcpd stop
+uci commit
+
+cat > /etc/nftables.d/20-pptp-conntrack-helper.nft << 'EOF'
+chain user_pre_output {
+    type filter hook output priority -1; policy accept;
+    tcp dport 1723 ct helper set "pptp"
+}
+EOF
+
+echo net.netfilter.nf_conntrack_helper=1 >> /etc/sysctl.d/10-default.conf
+
+sed -i 's/^mppe/#mppe/' /etc/ppp/options.pptp
+echo nomppe >> /etc/ppp/options.pptp
+
+uci set wireless.@wifi-device[0].disabled='0'
+uci set wireless.@wifi-device[0].htmode='HE40'
+uci set wireless.@wifi-device[0].country='PA'
+uci set wireless.@wifi-iface[0].disabled='0'
+uci set wireless.@wifi-iface[0].htmode='HE40'
+uci set wireless.@wifi-iface[0].encryption='psk2'
+uci set wireless.@wifi-iface[0].ssid="$wlan_name_2g"
+uci set wireless.@wifi-iface[0].key="$wlan_password_2g"
+uci set wireless.@wifi-device[1].disabled='0'
+uci set wireless.@wifi-device[1].country='PA'
+uci set wireless.@wifi-iface[1].disabled='0'
+uci set wireless.@wifi-iface[1].encryption='psk2'
+uci set wireless.@wifi-iface[1].ssid="$wlan_name_5g"
+uci set wireless.@wifi-iface[1].key="$wlan_password_5g"
+uci commit wireless
+
+/etc/init.d/network restart

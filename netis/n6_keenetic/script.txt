@@ -1,0 +1,46 @@
+Установить прошивку 23.05.5 из веб интерфейса через браузер Firefox в режиме инкогнито
+
+Запустить из под Windows Установка Breed > !Start.bat
+
+Зайти в загрузчик Breed через браузер 192.168.1.1 у в разделе Backup сделать Full dump
+
+В разделе Upgrade выбрать Bootloader и Auto reboot и указать файл загрузчика KeenBOOT-Netis_N6_v1.4.bin
+
+После перезагрузки войти в KeenBoot в браузере Chrome в режиме инкогнито и выполнить форматирование флешки
+
+Залить Firmware, EEPROM, U-Config из каталога Keenetic 4.3.6.3
+
+----------------------------------------------------------------------------------------------------------
+
+http://192.168.1.1/a
+
+opkg disk storage:/ https://bin.entware.net/mipselsf-k3.4/installer/mipsel-installer.tar.gz
+
+ssh root@192.168.1.1:222
+
+passwd
+
+opkg update
+opkg upgrade
+
+opkg install nano ethtool
+opkg install ca-certificates wget-ssl
+opkg remove wget-nossl
+
+nano /opt/etc/config/dropbear.conf
+
+mkdir -p /opt/etc/opkg
+echo "src/gz nfqws-keenetic https://anonym-tsk.github.io/nfqws-keenetic/all" > /opt/etc/opkg/nfqws-keenetic.conf
+
+opkg update
+opkg install nfqws-keenetic
+opkg install nfqws-keenetic-web
+
+nano /opt/etc/php.ini
+memory_limit = 32M
+post_max_size = 32M
+upload_max_filesize = 16M
+
+192.168.1.1:90
+nfqws.conf
+ISP_INTERFACE="eth2.4 ppp0"
